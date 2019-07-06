@@ -289,6 +289,37 @@ extern "C" void FORTRAN_NAME(star_maker10)(int *nx, int *ny, int *nz,
              float *mp, float *tdp, float *tcp, float *metalf);
 
 
+extern "C" void FORTRAN_NAME(star_maker_smaug)(int *nx, int *ny, int *nz,
+    float *d, float *dm, float *temp, float *u, float *v, float *w,
+    float *dt, float *r, float *metal, float *dx, FLOAT *t, float *z,
+    int *procnum,
+    float *d1, float *x1, float *v1, float *t1,
+    int *nmax, FLOAT *xstart, FLOAT *ystart, FLOAT *zstart,
+    int *ibuff,
+    int *imetal, hydro_method *imethod, int *tindsf,
+    float *odthresh, int *useodthresh, float *massff, float *smthrest, int *level,
+    int *np,
+    FLOAT *xp, FLOAT *yp, FLOAT *zp, float *up, float *vp, float *wp,
+    float *mp, float *tdp, float *tcp, float *metalf,
+    int *imetalSNIa, float *metalSNIa, float *metalfSNIa,
+    int *imetalSNII, float *metalSNII, float *metalfSNII, float *mfcell);
+
+
+extern "C" void FORTRAN_NAME(smaug_feedback)(int *nx, int *ny, int *nz,
+             float *d, float *dm, float *te, float *ge, float *u, float *v,
+                       float *w, float *metal, float *zfield1, float *zfield2,
+             int *idual, int *imetal, int *imulti_metals, hydro_method *imethod,
+                       float *dt, float *r, float *dx, FLOAT *t, float *z,
+             float *d1, float *x1, float *v1, float *t1,
+                       float *sn_param, float *m_eject, float *yield,
+             int *distrad, int *diststep, int *distcells,
+             int *nmax, FLOAT *xstart, FLOAT *ystart, FLOAT *zstart,
+                       int *ibuff,
+             FLOAT *xp, FLOAT *yp, FLOAT *zp, float *up, float *vp, float *wp,
+             float *mp, float *tdp, float *tcp, float *metalf, int *type,
+                        float *justburn);
+
+
 #ifdef STAR1
 extern "C" void FORTRAN_NAME(star_feedback1)(int *nx, int *ny, int *nz,
              float *d, float *dm, float *temp, float *u, float *v,
@@ -1089,6 +1120,53 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
       }
     } 
 
+
+    if (STARMAKE_METHOD(SMAUG_FEEDBACK)){
+
+     NumberOfNewParticlesSoFar = NumberOfNewParticles;
+
+      float odthresh = StarMakerOverDensityThreshold * m_h /  DensityUnits;
+
+      // Only form stars on the maximum refinement level
+
+      if (level == MaximumRefinementLevel)
+      {
+        // Call fortran star maker routine
+
+          int metalII = 3 + StarMakerTypeIaSNe;
+
+        FORTRAN_NAME(star_maker_smaug)(
+          GridDimension, GridDimension+1, GridDimension+2,
+          BaryonField[DensNum], dmfield, temperature, BaryonField[Vel1Num],
+          BaryonField[Vel2Num], BaryonField[Vel3Num],
+          &dtFixed, BaryonField[NumberOfBaryonFields], MetalPointer,
+          &CellWidthTemp, &Time, &zred, &MyProcessorNumber,
+          &DensityUnits, &LengthUnits, &VelocityUnits, &TimeUnits,
+          &MaximumNumberOfNewParticles, CellLeftEdge[0], CellLeftEdge[1],
+          CellLeftEdge[2], &GhostZones,
+          &MetallicityField, &HydroMethod, &StarMakerTimeIndependentFormation,
+          &odthresh, &StarMakerUseOverDensityThreshold, &StarMakerMassEfficiency,
+          &StarMakerMinimumMass, &level, &NumberOfNewParticles,
+          tg->ParticlePosition[0], tg->ParticlePosition[1],
+          tg->ParticlePosition[2],
+          tg->ParticleVelocity[0], tg->ParticleVelocity[1],
+          tg->ParticleVelocity[2],
+          tg->ParticleMass, tg->ParticleAttribute[1], tg->ParticleAttribute[0],
+          tg->ParticleAttribute[2],
+          &StarMakerTypeIaSNe, BaryonField[MetalIaNum], tg->ParticleAttribute[3],
+          &StarMakerTypeIISNeMetalField, BaryonField[MetalIINum], tg->ParticleAttribute[metalII],
+          &StarMakerMaximumFractionCell);
+
+      }
+
+      for (i = NumberOfNewParticlesSoFar; i < NumberOfNewParticles; i++) {
+        tg->ParticleType[i] = NormalStarType;
+      }
+
+
+    } // end smaug maker
+
+
     if (STARMAKE_METHOD(INSTANT_STAR)) {
 
       //---- MODIFIED SF ALGORITHM (NO-JEANS MASS, NO dt DEPENDENCE, NO STOCHASTIC SF, 
@@ -1875,6 +1953,33 @@ int grid::StarParticleHandler(HierarchyEntry* SubgridPointer, int level,
  
   } 
 
+
+  if (STARFEED_METHOD(SMAUG_FEEDBACK)){
+
+     FORTRAN_NAME(smaug_feedback)(
+       GridDimension, GridDimension+1, GridDimension+2,
+          BaryonField[DensNum], dmfield,
+          BaryonField[TENum], BaryonField[GENum], BaryonField[Vel1Num],
+          BaryonField[Vel2Num], BaryonField[Vel3Num], BaryonField[MetalNum],
+          BaryonField[MetalNum+1], BaryonField[MetalNum+2],
+       &DualEnergyFormalism, &MetallicityField, &MultiMetals, &HydroMethod,
+       &dtFixed, BaryonField[NumberOfBaryonFields], &CellWidthTemp,
+          &Time, &zred,
+       &DensityUnits, &LengthUnits, &VelocityUnits, &TimeUnits,
+          &StarEnergyToThermalFeedback, &StarMassEjectionFraction,
+          &StarMetalYield, &StarFeedbackDistRadius, &StarFeedbackDistCellStep,
+       &StarFeedbackDistTotalCells,
+       &NumberOfParticles,
+          CellLeftEdge[0], CellLeftEdge[1], CellLeftEdge[2], &GhostZones,
+       ParticlePosition[0], ParticlePosition[1],
+          ParticlePosition[2],
+       ParticleVelocity[0], ParticleVelocity[1],
+       ParticleVelocity[2],
+       ParticleMass, ParticleAttribute[1], ParticleAttribute[0],
+          ParticleAttribute[2], ParticleType,
+       &RadiationData.IntegratedStarFormation);
+
+  } // end smaug feedback
 
   if (STARFEED_METHOD(INSTANT_STAR)) {
 
