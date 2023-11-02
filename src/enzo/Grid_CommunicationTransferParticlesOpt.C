@@ -104,7 +104,7 @@ int grid::CommunicationTransferParticles(grid* Grids[], int NumberOfGrids,
 		 DomainWidthInv[dim]);
 
 	  GridPosition[dim] = 
-	    search_lower_bound(GStartIndex[dim], CenterIndex, 0, Layout[dim],
+	      search_lower_bound(GStartIndex[dim], CenterIndex, 0, Layout[dim],
 			       Layout[dim]);
 	  GridPosition[dim] = min(GridPosition[dim], Layout[dim]-1);
 	  

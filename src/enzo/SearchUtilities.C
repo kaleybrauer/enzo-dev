@@ -24,9 +24,11 @@ int search_lower_bound(int *arr, int value, int low, int high,
 		       int total)
 {
   int mid, width;
-  if (high < low)
+
+  if (high < low) {
     ENZO_VFAIL("high (%d) < low (%d) when searching for lower bound.",
 	       high, low);
+  }
   width = high-low;
   mid = low + width/2;
   // First catch here if it's the last recursive call

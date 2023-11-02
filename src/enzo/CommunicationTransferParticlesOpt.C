@@ -96,8 +96,9 @@ int CommunicationTransferParticles(grid *GridPointer[], int NumberOfGrids,
 
     for (i = 0; i < Layout[dim]; i++) {
       ExactCount += ExactDims;
-      if (i < Layout[dim]-1)
+      if (i < Layout[dim]-1) {
 	ThisCount = nint(0.5*ExactCount)*2 - DisplacementCount;
+      }
       else
 	ThisCount = nint(ExactCount) - DisplacementCount;
       StartIndex[dim][i] = DisplacementCount;
@@ -105,7 +106,6 @@ int CommunicationTransferParticles(grid *GridPointer[], int NumberOfGrids,
     } // ENDFOR i
 
     StartIndex[dim][Layout[dim]] = TopGridDims[dim];
-
   } // ENDFOR dim
 
   for (grid = 0; grid < NumberOfGrids; grid++) {
@@ -120,7 +120,7 @@ int CommunicationTransferParticles(grid *GridPointer[], int NumberOfGrids,
 	  int(TopGridDims[dim] *
 	      (0.5*(Right[dim]+Left[dim]) - DomainLeftEdge[dim]) /
 	      (DomainRightEdge[dim] - DomainLeftEdge[dim]));
-      
+     
 	GridPosition[dim] = 
 	  search_lower_bound(StartIndex[dim], CenterIndex, 0, Layout[dim],
 			     Layout[dim]);
